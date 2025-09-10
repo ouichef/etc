@@ -1,6 +1,6 @@
 rulesets:
   namespace:
-    cannonical:
+    update:
       version: "2025-08-31"
       rules:
         - name: BrandNameRule
@@ -12,5 +12,40 @@ rulesets:
             - brand_name
           writes:
             - brand_id
+          before: []
+          after: []
+        - name: ImageURLRule
+          key: image-url-rule
+          description: "picks the first image from a list of image urls"
+          priority: 5
+          reads:
+            - image_urls
+            - menu_item.current_image
+          writes:
+            - image_url
+          before: []
+          after: []
+    create:
+      version: "2025-08-31"
+      rules:
+        - name: BrandNameRule
+          key: brand-name-rule
+          description: "Assigns a brand_id on successful lookup by brand_name"
+          priority: 10
+          params: { max_tags: 5 }
+          reads:
+            - brand_name
+          writes:
+            - brand_id
+          before: []
+          after: []
+        - name: CreateImageUrlRule
+          key: image-url-rule
+          description: "picks the first image from a list of image urls"
+          priority: 5
+          reads:
+            - image_urls
+          writes:
+            - image_url
           before: []
           after: []
