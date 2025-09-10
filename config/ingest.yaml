@@ -1,0 +1,88 @@
+ruleset:
+  version: "2025.09.06.1"
+
+flags:
+  # snapshot and pass as pure lambdas into context; namespaced by ingest
+  ingest:
+    enable_price_rounding: true
+    enable_tag_sorting: false
+
+filtering:
+  # raw-payload guardrails by source
+  sources:
+    leafly:
+      allowed_status: ["active","inactive"]
+      required_keys: ["external_id","name"]
+    dutchie:
+      allowed_status: ["active","inactive"]
+      required_keys: ["external_id","name"]
+    default:
+      allowed_status: ["active","inactive"]
+      required_keys: ["external_id","name"]
+
+mapping:
+  # source -> normalized key mapping hints if you need them
+  sources:
+    leafly:
+      brand_key: "brand"
+      strain_key: "strain"
+      tags_key: "tags"
+      price_key: "price_cents"
+    dutchie:
+      brand_key: "brand_name"
+      strain_key: "strain_name"
+      tags_key: "labels"
+      price_key: "price"
+
+publishability:
+  # if ONLY these attributes changed, do update_columns and bypass callbacks
+  silent_attributes:
+    default: ["price_cents"]
+    sources:
+      leafly:  ["price_cents","inventory_count"]
+      dutchie: ["price_cents"]
+
+deletes:
+  # policy for hard/soft delete on inbound inactive
+  on_inactive:
+    action: "soft"       # "soft" | "none"
+    soft_status_value: "inactive"
+
+references:
+  mode: "lookup_only"    # future: "create", "queue" not allowed today
+  default_action: "reject"   # when a key is missing in repo: "reject" | "ignore"
+
+  # Per-kind normalization. Apply once in batch.
+  normalize:
+    brand:  {strip: true, case: "title"}
+    strain: {strip: true, case: "title"}
+    tag:    {strip: true, case: "downcase"}
+
+  # Source overrides for miss handling
+  sources:
+    leafly:
+      brands:  "reject"
+      strains: "ignore"
+      tags:    "ignore"
+    dutchie:
+      brands:  "reject"
+      strains: "reject"
+      tags:    "ignore"
+    default:
+      brands:  "reject"
+      strains: "reject"
+      tags:    "ignore"
+
+observability:
+  artifact_bucket: "ingest-packs"
+  include:
+    - "payload"
+    - "changes"
+    - "fired_rules"
+    - "batch_now"
+    - "flag_snapshot_version"
+    - "ruleset_version"
+    - "ignored_reference_misses"  # populated when references.action=ignore
+  datadog:
+    service: "menu-ingest"
+    env: "prod"

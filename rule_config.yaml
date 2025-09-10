@@ -1,0 +1,16 @@
+rulesets:
+  namespace:
+    cannonical:
+      version: "2025-08-31"
+      rules:
+        - name: BrandNameRule
+          key: brand-name-rule
+          description: "Assigns a brand_id on successful lookup by brand_name"
+          priority: 10
+          params: { max_tags: 5 }
+          reads:
+            - brand_name
+          writes:
+            - brand_id
+          before: []
+          after: []
