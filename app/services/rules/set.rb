@@ -13,7 +13,7 @@ class Rules::Set
     rs.freeze
   end
 
-  # runtime: O(n) walk, no tsort calls
+  # runtime: O(n) walk over compiled rules
   def evaluate(ctx)
     changes = {}
     fired = []
@@ -34,7 +34,7 @@ class Rules::Set
     [changes.freeze, fired.freeze]
   end
 
-  # --- CI/CD validation helpers ---
+  # validation helpers
   def validate!
     detect_cycles!
     conflicts = detect_write_conflicts
@@ -57,7 +57,7 @@ class Rules::Set
     build_edges
   end
 
-  # --- TSort hooks built from metadata ---
+  # TSort hooks built from metadata
   def tsort_each_node(&blk) = rules.each_key(&blk)
   def tsort_each_child(key, &blk)
     edges = build_edges

@@ -38,16 +38,16 @@ module Integration
         processed_items
       end
 
-      def process_one(item_ctx, ctx)
+      def process_one(item_ctx, sync_ctx)
         processed_item_ctx =
           case item_ctx
           in action: :create
-            creator.call(item_ctx:, ctx:)
+            creator
           in action: :update
-            updater.call(item_ctx:, ctx:)
+            updater
           in action: :destroy
-            destroyer.call(item_ctx:, ctx:)
-          end
+            destroyer
+          end.call(item_ctx:, sync_ctx:)
 
         processed_item_ctx
       end

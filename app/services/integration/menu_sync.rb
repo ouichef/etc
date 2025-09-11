@@ -1,14 +1,40 @@
 module Integration
   module MenuSync
+    class MenuItemContract < Dry::Validation::Contract
+      params do
+        required(:external_id).filled(:string)
+        required(:name).filled(:string)
+        optional(:brand_id).maybe(:integer)
+        optional(:strain_id).maybe(:integer)
+        optional(:tag_ids).array(:integer)
+        optional(:price_cents).maybe(:integer, gt?: 0)
+        required(:status).filled(:string, included_in?: %w[active inactive])
+      end
+    end
+
+    class CreateItem
+    end
+    class UpdateItem
+    end
+
+    class DestroyItem
+    end
+
+    # Each one of these will compile their specific ruleset on boot.
+    # These encapsulate the canonical menu item transformation and persistence paths.
+    # The rulesets will perform the last transformation, then the MenuItemContract will perform the last validations (before rails hooks that is)
+    # Then they use ActiveRecord to create, update, or (soft) destroy the item.
+    UPDATE_TX = UpdateItem.compile!
+    CREATE_TX = CreateItem.compile!
+
     def self.build_pipeline
       Integration::Ingest::Pipeline.new(
         filter: ->(items) { items.uniq(&:external_id) },
-        normalized_payload_contract:
-          Integration::MenuSync::Registry.contract_for(:canonical),
-        updater: Integration::MenuSync::UpdateService, # contains ruleset for update, and persistence.
-        creator: Integration::MenuSync::CreateService, # contains ruleset for create, and persistence.
-        destroyer: Integration::MenuSync::DestroyService, # contains ruleset for destroy, and persistence.
-        reporter: Integration::MenuSync::ReportService
+        canonical_menu_item_contract: MenuItemContract,
+        update_tx: UPDATE_TX,
+        create_tx: CREATE_TX,
+        destroyer: DestroyItem,
+        reporter: Integration::MenuSync::ReportSync
       )
     end
 
@@ -18,18 +44,13 @@ module Integration
     def self.build_pipeline_ctx_for(source:)
       flags_snap = Flag.snapshot(:menu_sync)
 
-      raw_payload_contract =
-        Integration::MenuSync::Registry.contract_for(source:)
-
-      external_tx = Integration::MenuSync::Registry.external_tx_for(source:)
-
       Integration::MenuSync::Context.new(
         now: Time.current.freeze,
         flags_snap:,
         env: Rails.env,
         source:,
-        raw_payload_contract:,
-        external_tx:
+        raw_payload_contract: source.raw_payload_contract,
+        external_tx: source.external_tx
       )
     end
   end

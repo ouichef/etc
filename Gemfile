@@ -8,6 +8,7 @@ gem "dry-struct"
 gem "dry-validation"
 gem "dry-initializer"
 gem "dry-types"
+gem "dry-transaction"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
